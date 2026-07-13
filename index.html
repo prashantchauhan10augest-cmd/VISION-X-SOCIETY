@@ -5139,12 +5139,27 @@
                 window.PlayerPortal._tempGatewayAccess.teamName = matchedTeam.teamName;
                 window.PlayerPortal._tempGatewayAccess.teamCode = matchedTeam.teamCode;
 
-                // Access granted!
-                window.PlayerPortal.closeEventGateway();
-
                 const id = access.eventId;
                 const name = access.eventName;
-                const activeEvt = dbState.events[id] || { eventName: name, eventDesc: "CTF Exploits Operations Grid", eventDuration: 0 };
+                const activeEvt = dbState.events[id] || { eventName: name, eventDesc: "CTF Exploits Operations Grid", eventDuration: 0, status: "Published" };
+
+                // 1. Admin Approval / Status Check
+                if (activeEvt.status === "Draft" || activeEvt.status === "Completed") {
+                    showToast("ACCESS DENIED", "This event is currently closed or requires admin approval.", "error");
+                    return;
+                }
+
+                // 2. Scheduled Start Date Check
+                if (activeEvt.eventStart) {
+                    const startTime = new Date(activeEvt.eventStart).getTime();
+                    if (Date.now() < startTime) {
+                        showToast("ACCESS DENIED", "This event has not started yet. Please wait until the scheduled date.", "error");
+                        return;
+                    }
+                }
+
+                // Access granted!
+                window.PlayerPortal.closeEventGateway();
 
                 let authoritativeEndsAt = 0;
                 let isCaptain = matchedTeam.captainPlayerId === currentUserProfile.playerId;
