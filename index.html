@@ -3006,9 +3006,13 @@
             const passcode = document.getElementById('auth-signin-key').value;
 
             let foundPlayer = null;
+            let foundId = false;
             Object.values(dbState.players).forEach(p => {
-                if ((p.email.toLowerCase() === id || p.username.toLowerCase() === id || p.playerId.toLowerCase() === id) && p.passcode === passcode) {
-                    foundPlayer = p;
+                if (p.email.toLowerCase() === id || p.username.toLowerCase() === id || p.playerId.toLowerCase() === id) {
+                    foundId = true;
+                    if (p.passcode === passcode) {
+                        foundPlayer = p;
+                    }
                 }
             });
 
@@ -3027,8 +3031,10 @@
                 } else {
                     changeView('player-hub');
                 }
+            } else if (foundId) {
+                showToast("INVALID PASSWORD", "The password you entered is incorrect.", "error");
             } else {
-                showToast("DECRYPT KEY MISMATCH", "Invalid identifier or passcode.", "error");
+                showToast("USER NOT FOUND", "No account found with that identifier.", "error");
             }
         };
 
@@ -5153,7 +5159,12 @@
                 if (activeEvt.eventStart) {
                     const startTime = new Date(activeEvt.eventStart).getTime();
                     if (Date.now() < startTime) {
-                        showToast("ACCESS DENIED", "This event has not started yet. Please wait until the scheduled date.", "error");
+                        const diffMs = startTime - Date.now();
+                        const h = Math.floor(diffMs / (1000 * 60 * 60));
+                        const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                        const s = Math.floor((diffMs % (1000 * 60)) / 1000);
+                        const timeStr = `${h}h ${m}m ${s}s`;
+                        showToast("EVENT NOT STARTED", `Countdown: ${timeStr} remaining until the event begins.`, "error");
                         return;
                     }
                 }
