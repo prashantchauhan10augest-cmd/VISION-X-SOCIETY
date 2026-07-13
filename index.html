@@ -896,6 +896,26 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Global Team Card -->
+                    <div id="player-global-team-card" class="bg-[#0a0a0a] border border-red-500/20 p-5 rounded-2xl hidden">
+                        <div class="flex justify-between items-center border-b border-red-500/10 pb-3 mb-4">
+                            <h3 class="text-sm font-bold text-gray-100 uppercase tracking-widest"><i class="fa-solid fa-users-gear text-red-500 mr-2"></i> GLOBAL TEAM AFFILIATION</h3>
+                            <span id="pgt-role" class="px-2 py-0.5 rounded text-[10px] bg-red-600/20 text-red-500 uppercase font-bold border border-red-500/20">Member</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <span class="text-[10px] text-gray-500 uppercase block mb-1">Team Name</span>
+                                <span id="pgt-name" class="text-lg font-bold text-gray-200">-</span>
+                                <div class="mt-2 text-xs text-gray-400 font-mono">Team Code: <span id="pgt-code" class="text-red-400 uppercase">-</span></div>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-500 uppercase block mb-2">Team Roster</span>
+                                <div id="pgt-roster" class="flex flex-wrap gap-2 text-xs font-mono text-gray-300">
+                                    <!-- Roster goes here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Overview Metrics Cards -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1524,6 +1544,11 @@
                     data-view="players">
                     <i class="fa-solid fa-user-shield"></i> Player Registry
                 </button>
+                <button onclick="window.AdminPortal.changeSubView('team-registry')"
+                    class="admin-sub-btn w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-3 transition text-gray-300 hover:text-gray-100"
+                    data-view="team-registry">
+                    <i class="fa-solid fa-users-gear"></i> Team Registry
+                </button>
                 <button onclick="window.AdminPortal.changeSubView('attendance')"
                     class="admin-sub-btn w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-3 transition text-gray-300 hover:text-gray-100"
                     data-view="attendance">
@@ -1719,6 +1744,35 @@
                                 </tr>
                             </thead>
                             <tbody id="admin-players-tbody" class="text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUBVIEW: TEAM REGISTRY -->
+                <div id="admin-subview-team-registry" class="admin-workspace-pane hidden space-y-6">
+                    <div class="flex justify-between items-center border-b border-red-500/20 pb-4">
+                        <h4 class="text-md font-bold text-gray-100 uppercase tracking-wider">GLOBAL TEAM REGISTRY</h4>
+                        <div class="flex gap-2">
+                            <button onclick="window.AdminPortal.openGlobalTeamModal()"
+                                class="px-3 py-1.5 bg-[#0a0a0a] text-white text-xs font-bold uppercase rounded border border-white/20 hover:bg-[#222] transition">
+                                <i class="fa-solid fa-plus mr-1"></i> Create Team
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0a0a0a] border border-red-500/20 rounded-2xl overflow-hidden font-mono text-xs">
+                        <table class="w-full text-left">
+                            <thead class="bg-[#111] text-gray-400">
+                                <tr>
+                                    <th class="p-4 tracking-wider uppercase font-semibold">Team ID / Code</th>
+                                    <th class="p-4 tracking-wider uppercase font-semibold">Team Name</th>
+                                    <th class="p-4 tracking-wider uppercase font-semibold">Members</th>
+                                    <th class="p-4 tracking-wider uppercase font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-global-teams-tbody" class="text-gray-300 divide-y divide-red-500/10">
+                                <!-- Global teams rendered here -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -2361,6 +2415,52 @@
         </div>
     </div>
 
+    <!-- DIALOGUE MODAL: GLOBAL TEAM CREATION -->
+    <div id="modal-admin-global-team"
+        class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center z-50 p-4 font-sans overflow-y-auto">
+        <div class="bg-[#050505] border border-red-500/30 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative my-8">
+            <button onclick="window.AdminPortal.closeGlobalTeamModal()"
+                class="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition text-lg"><i
+                    class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-bold text-gray-100 uppercase tracking-widest mb-1 border-b border-red-500/20 pb-3 flex items-center gap-2">
+                <i class="fa-solid fa-users-gear text-red-500"></i> <span id="modal-global-team-title">Global Team Setup</span>
+            </h3>
+            
+            <form onsubmit="window.AdminPortal.saveGlobalTeam(event)" class="space-y-4 font-mono text-xs mt-5">
+                <input type="hidden" id="gt-setup-id" value="">
+                <div>
+                    <label class="block text-[10px] text-gray-400 uppercase mb-1">Team Name</label>
+                    <input type="text" id="gt-setup-name" required placeholder="e.g. Shadow Knights"
+                        class="w-full bg-[#111] border border-red-500/20 rounded p-2 text-gray-100 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-gray-400 uppercase mb-1">Team Code (Login Code)</label>
+                    <input type="text" id="gt-setup-code" required placeholder="e.g. SK-442"
+                        class="w-full bg-[#111] border border-red-500/20 rounded p-2 text-gray-100 focus:outline-none uppercase">
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-red-500/20">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-[10px] text-gray-400 uppercase">Team Members</label>
+                        <button type="button" onclick="window.AdminPortal.openAddPlayerModal('global', document.getElementById('gt-setup-id').value)" class="text-[10px] bg-red-600/10 text-red-500 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition">+ Add Operative</button>
+                    </div>
+                    <div id="gt-setup-members-container" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        <!-- Roster rendered here -->
+                    </div>
+                </div>
+
+                <div class="pt-6 flex justify-end gap-3 mt-4">
+                    <button type="button" onclick="window.AdminPortal.closeGlobalTeamModal()"
+                        class="px-5 py-2 rounded text-gray-400 hover:text-white transition uppercase font-bold tracking-wider text-[10px]">Cancel</button>
+                    <button type="submit"
+                        class="px-6 py-2 bg-red-600 text-white rounded font-bold uppercase tracking-wider text-[10px] shadow-neon-red transition hover:bg-red-500">
+                        Save Team
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- DIALOGUE MODAL: ADD PLAYER SEARCH MODAL (STEP-BY-STEP PLAYER VERIFICATION) -->
     <div id="modal-admin-add-player"
         class="fixed inset-0 bg-black/95 backdrop-blur-sm hidden items-center justify-center z-[120] p-4 font-mono">
@@ -2623,6 +2723,7 @@
         // EMPTY DATABASE SYSTEM STATES
         const dbState = {
             players: {},
+            teams: {},
             events: {},
             categories: {},
             questions: {},
@@ -2777,6 +2878,13 @@
             onSnapshot(playersRef, (snapshot) => {
                 dbState.players = {};
                 snapshot.forEach(doc => { dbState.players[doc.id] = doc.data(); });
+                renderAllActiveViews();
+            }, (err) => console.error(err));
+
+            const teamsRef = query(collection(db, 'artifacts', appId, 'public', 'data', 'teams'));
+            onSnapshot(teamsRef, (snapshot) => {
+                dbState.teams = {};
+                snapshot.forEach(doc => { dbState.teams[doc.id] = doc.data(); });
                 renderAllActiveViews();
             }, (err) => console.error(err));
 
@@ -3111,6 +3219,36 @@
             compiledEventHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             playerDoc.eventHistory = compiledEventHistory;
+
+            // Check Global Team Affiliation
+            let playerGlobalTeam = null;
+            let playerGlobalRole = 'Member';
+            Object.values(dbState.teams || {}).forEach(team => {
+                const member = (team.members || []).find(m => m.playerId === playerDoc.playerId);
+                if(member) {
+                    playerGlobalTeam = team;
+                    playerGlobalRole = member.role;
+                }
+            });
+
+            const pgtCard = document.getElementById('player-global-team-card');
+            if(playerGlobalTeam) {
+                pgtCard.classList.remove('hidden');
+                document.getElementById('pgt-role').textContent = playerGlobalRole;
+                document.getElementById('pgt-name').textContent = playerGlobalTeam.teamName;
+                document.getElementById('pgt-code').textContent = playerGlobalTeam.teamCode;
+                
+                const rosterHtml = (playerGlobalTeam.members || []).map(m => {
+                    const p = dbState.players[m.playerId];
+                    if(!p) return '';
+                    const isCaptain = m.role === 'Captain';
+                    const icon = isCaptain ? '<i class="fa-solid fa-crown text-yellow-500 mr-1"></i>' : '<i class="fa-solid fa-user text-gray-400 mr-1"></i>';
+                    return `<span class="bg-[#111] border border-red-500/10 px-2 py-1 rounded-md text-[10px]">${icon}${p.name}</span>`;
+                }).join('');
+                document.getElementById('pgt-roster').innerHTML = rosterHtml;
+            } else {
+                pgtCard.classList.add('hidden');
+            }
 
             // Render Sidebar Identity
             document.getElementById('side-p-name').textContent = playerDoc.name;
@@ -5670,7 +5808,130 @@
             }
         };
 
+        const openGlobalTeamModal = (teamId = null) => {
+            const modal = document.getElementById('modal-admin-global-team');
+            document.getElementById('gt-setup-id').value = teamId || "";
+            window.AdminPortal._tempGlobalTeamMembers = [];
+            
+            if (teamId && dbState.teams && dbState.teams[teamId]) {
+                const t = dbState.teams[teamId];
+                document.getElementById('modal-global-team-title').textContent = "Edit Global Team";
+                document.getElementById('gt-setup-name').value = t.teamName;
+                document.getElementById('gt-setup-code').value = t.teamCode;
+                window.AdminPortal._tempGlobalTeamMembers = JSON.parse(JSON.stringify(t.members || []));
+            } else {
+                document.getElementById('modal-global-team-title').textContent = "Create Global Team";
+                document.getElementById('gt-setup-name').value = "";
+                document.getElementById('gt-setup-code').value = "";
+            }
+            
+            window.AdminPortal.renderGlobalTeamRoster();
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        const closeGlobalTeamModal = () => {
+            const modal = document.getElementById('modal-admin-global-team');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        const renderGlobalTeamRoster = () => {
+            const container = document.getElementById('gt-setup-members-container');
+            container.innerHTML = "";
+            const members = window.AdminPortal._tempGlobalTeamMembers || [];
+            
+            if (members.length === 0) {
+                container.innerHTML = '<p class="text-[10px] text-gray-500 text-center">No members added yet.</p>';
+                return;
+            }
+
+            members.forEach((m, idx) => {
+                const p = dbState.players[m.playerId];
+                if(!p) return;
+                const isCaptain = m.role === 'Captain';
+                const el = document.createElement('div');
+                el.className = "flex justify-between items-center bg-[#111] border border-red-500/10 p-2 rounded";
+                el.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-${isCaptain ? 'crown text-yellow-500' : 'user text-gray-400'}"></i>
+                        <span class="text-gray-200">${p.name}</span>
+                        <span class="text-[8px] text-gray-500">(@${p.username})</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="window.AdminPortal.toggleGlobalTeamCaptain(${idx})" class="text-[10px] ${isCaptain ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500'}">MAKE CAPTAIN</button>
+                        <button type="button" onclick="window.AdminPortal.removeGlobalTeamMember(${idx})" class="text-[10px] text-gray-500 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        };
+
+        const toggleGlobalTeamCaptain = (idx) => {
+            const members = window.AdminPortal._tempGlobalTeamMembers;
+            const currentlyCaptain = members[idx].role === 'Captain';
+            members.forEach(m => m.role = 'Member');
+            if (!currentlyCaptain) {
+                members[idx].role = 'Captain';
+            }
+            window.AdminPortal.renderGlobalTeamRoster();
+        };
+
+        const removeGlobalTeamMember = (idx) => {
+            window.AdminPortal._tempGlobalTeamMembers.splice(idx, 1);
+            window.AdminPortal.renderGlobalTeamRoster();
+        };
+
+        const saveGlobalTeam = async (e) => {
+            e.preventDefault();
+            const idVal = document.getElementById('gt-setup-id').value;
+            const teamId = idVal || `gt-${Date.now()}`;
+            const teamName = document.getElementById('gt-setup-name').value.trim();
+            const teamCode = document.getElementById('gt-setup-code').value.trim().toUpperCase();
+            const members = window.AdminPortal._tempGlobalTeamMembers || [];
+
+            if(members.length === 0) {
+                showToast("TEAM ERROR", "A team must have at least one member.", "error");
+                return;
+            }
+            
+            const payload = {
+                teamId,
+                teamName,
+                teamCode,
+                members
+            };
+
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teams', teamId), payload);
+                showToast("TEAM SAVED", "Global Team has been updated successfully.", "success");
+                closeGlobalTeamModal();
+            } catch (err) {
+                console.error(err);
+                showToast("SAVE ERROR", "Failed to save global team.", "error");
+            }
+        };
+
+        const deleteGlobalTeam = async (teamId) => {
+            if(!confirm("Are you sure you want to delete this global team? This cannot be undone.")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teams', teamId));
+                showToast("TEAM DELETED", "Global Team has been removed.", "success");
+            } catch (err) {
+                console.error(err);
+                showToast("DELETE ERROR", "Failed to delete global team.", "error");
+            }
+        };
+
         window.AdminPortal = {
+            openGlobalTeamModal,
+            closeGlobalTeamModal,
+            renderGlobalTeamRoster,
+            toggleGlobalTeamCaptain,
+            removeGlobalTeamMember,
+            saveGlobalTeam,
+            deleteGlobalTeam,
+            editGlobalTeam: (id) => openGlobalTeamModal(id),
             changeSubView: (subViewId) => {
                 document.querySelectorAll('.admin-workspace-pane').forEach(pane => pane.classList.add('hidden'));
                 document.querySelectorAll('.admin-sub-btn').forEach(btn => {
