@@ -1751,7 +1751,10 @@
                 <!-- SUBVIEW: TEAM REGISTRY -->
                 <div id="admin-subview-team-registry" class="admin-workspace-pane hidden space-y-6">
                     <div class="flex justify-between items-center border-b border-red-500/20 pb-4">
-                        <h4 class="text-md font-bold text-gray-100 uppercase tracking-wider">GLOBAL TEAM REGISTRY</h4>
+                        <h4 class="text-md font-bold text-gray-100 uppercase tracking-wider flex items-center gap-3">
+                            GLOBAL TEAM REGISTRY
+                            <span id="gt-total-count" class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span>
+                        </h4>
                         <div class="flex gap-2">
                             <button onclick="window.AdminPortal.openGlobalTeamModal()"
                                 class="px-3 py-1.5 bg-[#0a0a0a] text-white text-xs font-bold uppercase rounded border border-white/20 hover:bg-[#222] transition">
@@ -2768,6 +2771,7 @@
 
         let playerCalendarInstance = null;
         let activeTargetTeamRowIndex = null;
+        let activeAddPlayerContext = 'leaderboard';
         let selectedCertPlayer = null;
 
         // Upload state holders
@@ -2947,6 +2951,7 @@
             try { executeAdminDataSync('leaderboard-mgr'); } catch (e) { console.error("sync leaderboard-mgr failed", e); }
             try { executeAdminDataSync('certs'); } catch (e) { console.error("sync certs failed", e); }
             try { executeAdminDataSync('players'); } catch (e) { console.error("sync players failed", e); }
+            try { executeAdminDataSync('team-registry'); } catch (e) { console.error("sync team-registry failed", e); }
             try { renderPlayerHubData(); } catch (e) { console.error("renderPlayerHubData failed", e); }
         };
 
@@ -3699,6 +3704,8 @@
                 renderAdminCertsTable();
             } else if (subViewId === 'players') {
                 renderAdminPlayersTable();
+            } else if (subViewId === 'team-registry') {
+                renderAdminGlobalTeams();
             } else if (subViewId === 'attendance') {
                 window.AdminPortal.renderAttendanceTable();
             }
@@ -4502,8 +4509,14 @@
 
         let selectedPlayerToDeploy = null;
 
-        const openAddPlayerModal = (teamIndex) => {
-            activeTargetTeamRowIndex = teamIndex;
+        const openAddPlayerModal = (contextOrTeamIndex) => {
+            if (contextOrTeamIndex === 'global') {
+                activeAddPlayerContext = 'global';
+                activeTargetTeamRowIndex = -1;
+            } else {
+                activeAddPlayerContext = 'leaderboard';
+                activeTargetTeamRowIndex = contextOrTeamIndex;
+            }
             selectedPlayerToDeploy = null;
             document.getElementById('player-search-box').value = "";
             document.getElementById('player-search-results').innerHTML = `<p class="text-[10px] text-gray-500 text-center py-4">Begin typing search credentials...</p>`;
@@ -4589,6 +4602,26 @@
                 return;
             }
 
+            const chosenRole = document.getElementById('player-deploy-role').value;
+
+            if (activeAddPlayerContext === 'global') {
+                if (!window.AdminPortal._tempGlobalTeamMembers) window.AdminPortal._tempGlobalTeamMembers = [];
+                const already = window.AdminPortal._tempGlobalTeamMembers.some(m => m.playerId === selectedPlayerToDeploy.playerId);
+                if (already) {
+                    showToast("VALIDATION ERROR", `${selectedPlayerToDeploy.name} is already deployed in this global team.`, "warning");
+                    return;
+                }
+                window.AdminPortal._tempGlobalTeamMembers.push({ playerId: selectedPlayerToDeploy.playerId, role: chosenRole });
+                if (chosenRole === 'Captain') {
+                    window.AdminPortal.toggleGlobalTeamCaptain(window.AdminPortal._tempGlobalTeamMembers.length - 1);
+                } else {
+                    window.AdminPortal.renderGlobalTeamRoster();
+                }
+                closeAddPlayerModal();
+                showToast("PLAYER DEPLOYED", "Player added to global team staging roster.", "success");
+                return;
+            }
+
             const targetTeam = activeAdminTeamsList[activeTargetTeamRowIndex];
             const alreadyInRoster = targetTeam.members.some(m => m.playerId === selectedPlayerToDeploy.playerId);
             if (alreadyInRoster) {
@@ -4608,8 +4641,6 @@
                 showToast("VALIDATION ERROR", `${selectedPlayerToDeploy.name} is already assigned to another team node for this event.`, "error");
                 return;
             }
-
-            const chosenRole = document.getElementById('player-deploy-role').value;
 
             targetTeam.members.push({
                 playerId: selectedPlayerToDeploy.playerId,
@@ -4751,6 +4782,44 @@
                     <td class="p-4 text-right font-mono text-xs text-red-500">
                         ${p.resetRequested ? `<button onclick="window.AdminPortal.resetPlayerPassword('${p.playerId}')" class="px-2 py-1 bg-yellow-600/20 border border-yellow-500/50 text-yellow-500 rounded mr-2 font-bold animate-pulse">RESET PW</button>` : ''}
                         <button onclick="window.AdminPortal.editPlayer('${p.playerId}')" class="px-2 py-1 bg-[#111] border border-red-500/20 text-red-500 rounded">EDIT</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        const renderAdminGlobalTeams = () => {
+            const tbody = document.getElementById('admin-global-teams-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            const teamsList = Object.values(dbState.teams || {});
+            
+            const countLabel = document.getElementById('gt-total-count');
+            if(countLabel) countLabel.textContent = teamsList.length;
+
+            if (teamsList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500 uppercase tracking-wider text-xs">No global teams found.</td></tr>`;
+                return;
+            }
+
+            teamsList.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-900/50 hover:bg-[#111]/30";
+                
+                let membersList = (t.members || []).map(m => {
+                    const player = dbState.players[m.playerId];
+                    const roleBadge = m.role === 'Captain' ? `<i class="fa-solid fa-crown text-yellow-500 mr-1"></i>` : `<i class="fa-solid fa-user text-gray-400 mr-1"></i>`;
+                    return player ? `<span class="inline-block bg-black border border-red-500/20 rounded px-2 py-1 mr-1 mb-1 text-[9px]">${roleBadge}${player.name}</span>` : '';
+                }).join('');
+
+                tr.innerHTML = `
+                    <td class="p-4 text-gray-200 font-mono">${t.teamId}<br><span class="text-[9px] text-gray-500 uppercase">Code: ${t.teamCode}</span></td>
+                    <td class="p-4 text-gray-200 font-mono">${t.teamName}</td>
+                    <td class="p-4 text-gray-400 font-mono"><div class="flex flex-wrap">${membersList || 'None'}</div></td>
+                    <td class="p-4 text-right font-mono text-xs text-red-500 flex justify-end gap-2">
+                        <button onclick="window.AdminPortal.editGlobalTeam('${t.teamId}')" class="px-2 py-1 bg-[#111] border border-red-500/20 text-red-500 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="window.AdminPortal.deleteGlobalTeam('${t.teamId}')" class="px-2 py-1 bg-red-900/20 border border-red-500/50 text-red-500 rounded hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -5889,12 +5958,14 @@
             const teamName = document.getElementById('gt-setup-name').value.trim();
             const teamCode = document.getElementById('gt-setup-code').value.trim().toUpperCase();
             const members = window.AdminPortal._tempGlobalTeamMembers || [];
-
-            if(members.length === 0) {
-                showToast("TEAM ERROR", "A team must have at least one member.", "error");
+            
+            // Duplicate team name check
+            const isDuplicate = Object.values(dbState.teams || {}).some(t => (t.teamName || "").toLowerCase() === teamName.toLowerCase() && t.teamId !== teamId);
+            if (isDuplicate) {
+                showToast("NAME CONFLICT", "A team with this exact name already exists. Please choose a different name.", "error");
                 return;
             }
-            
+
             const payload = {
                 teamId,
                 teamName,
